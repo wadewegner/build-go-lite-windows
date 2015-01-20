@@ -1,46 +1,65 @@
 package main
 
 import (
-	"archive/zip"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
-	"log"
-	"strconv"
+	"os/exec"
 )
 
 func main() {
 	srcFile := "go1.4.1.windows-386.zip"
 	url := "https://storage.googleapis.com/golang/" + srcFile
-	
-	dest := "."
+	// dest := "."
 	goPath := "go"
+	goZipName := "go1.4.1.windows-386-waw.zip"
 
-	err := os.Remove(srcFile)
-	err = os.RemoveAll(goPath)
-
-	if err != nil {
-		fmt.Println(err)
-	}
+	os.RemoveAll(srcFile)
+	os.RemoveAll(goPath)
+	os.RemoveAll(goZipName)
 
 	downloadFromUrl(url)
 
-	unzip(srcFile, dest)
+	_, err := exec.LookPath("7z")
+    if err != nil {
+        fmt.Println("Make sure 7zip is install and include your path.")
+        return
+    }
 
-	for index,element := range alwaysRemove {
+    commandString := fmt.Sprintf("unzip %s", srcFile)
+    executeCmd(commandString)
+
+
+	for _,element := range alwaysRemove {
 
 		fullPath := goPath + "/" + element
 		
-		fmt.Println("Removing file " + strconv.Itoa(index) + ": " + fullPath)
+		fmt.Println("Removing file: " + fullPath)
 		err = os.RemoveAll(goPath + "/" + element)
 	
 		if err != nil {
 			fmt.Println(err)
 		}
 	}
+
+
+    commandString = fmt.Sprintf(`7z a -tzip %s %s`, goZipName, goPath)
+	executeCmd(commandString)
+
+}
+
+func executeCmd(commandString string) {
+    commandSlice := strings.Fields(commandString)
+    fmt.Println(commandString)
+    c := exec.Command(commandSlice[0], commandSlice[1:]...)
+    err := c.Run()
+
+    if err != nil {
+		fmt.Println(err)
+	}
+
 }
 
 func downloadFromUrl(url string) {
@@ -70,50 +89,6 @@ func downloadFromUrl(url string) {
 	}
 
 	fmt.Println(n, "bytes downloaded.")
-}
-
-func unzip(src, dest string) error {
-    r, err := zip.OpenReader(src)
-    if err != nil {
-        return err
-    }
-    defer r.Close()
-
-    for _, f := range r.File {
-        rc, err := f.Open()
-        if err != nil {
-            return err
-        }
-        defer rc.Close()
-
-        fpath := filepath.Join(dest, f.Name)
-        if f.FileInfo().IsDir() {
-            os.MkdirAll(fpath, f.Mode())
-        } else {
-            var fdir string
-            if lastIndex := strings.LastIndex(fpath,string(os.PathSeparator)); lastIndex > -1 {
-                fdir = fpath[:lastIndex]
-            }
-
-            err = os.MkdirAll(fdir, f.Mode())
-            if err != nil {
-                log.Fatal(err)
-                return err
-            }
-            f, err := os.OpenFile(
-                fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-            if err != nil {
-                return err
-            }
-            defer f.Close()
-
-            _, err = io.Copy(f, rc)
-            if err != nil {
-                return err
-            }
-        }
-    }
-    return nil
 }
 
 var alwaysRemove = []string{
