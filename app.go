@@ -1,18 +1,17 @@
 package main
 
 import (
-	"fmt"
-	"io"
-	"net/http"
-	"os"
-	"strings"
-	"os/exec"
+"fmt"
+"io"
+"net/http"
+"os"
+"strings"
+"os/exec"
 )
 
 func main() {
 	srcFile := "go1.4.1.windows-386.zip"
 	url := "https://storage.googleapis.com/golang/" + srcFile
-	// dest := "."
 	goPath := "go"
 	goZipName := "go1.4.1.windows-386-waw.zip"
 
@@ -23,14 +22,13 @@ func main() {
 	downloadFromUrl(url)
 
 	_, err := exec.LookPath("7z")
-    if err != nil {
-        fmt.Println("Make sure 7zip is install and include your path.")
-        return
-    }
+	if err != nil {
+		fmt.Println("Make sure 7zip is install and include your path.")
+		return
+	}
 
-    commandString := fmt.Sprintf("unzip %s", srcFile)
-    executeCmd(commandString)
-
+	commandString := fmt.Sprintf("unzip %s", srcFile)
+	executeCmd(commandString)
 
 	for _,element := range alwaysRemove {
 
@@ -38,28 +36,25 @@ func main() {
 		
 		fmt.Println("Removing file: " + fullPath)
 		err = os.RemoveAll(goPath + "/" + element)
-	
+		
 		if err != nil {
 			fmt.Println(err)
 		}
 	}
 
-
-    commandString = fmt.Sprintf(`7z a -tzip %s %s`, goZipName, goPath)
+	commandString = fmt.Sprintf(`7z a -tzip %s %s`, goZipName, goPath)
 	executeCmd(commandString)
-
 }
 
 func executeCmd(commandString string) {
-    commandSlice := strings.Fields(commandString)
-    fmt.Println(commandString)
-    c := exec.Command(commandSlice[0], commandSlice[1:]...)
-    err := c.Run()
+	commandSlice := strings.Fields(commandString)
+	fmt.Println(commandString)
+	c := exec.Command(commandSlice[0], commandSlice[1:]...)
+	err := c.Run()
 
-    if err != nil {
+	if err != nil {
 		fmt.Println(err)
 	}
-
 }
 
 func downloadFromUrl(url string) {
